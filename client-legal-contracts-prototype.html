@@ -649,13 +649,21 @@ function drawMenu(){
   const host = document.getElementById('overlay');
   if(!S.menu || S.modal){ if(!S.modal) host.innerHTML=''; return; }
   const r = ROWS.find(x=>x.id===S.menu);
+  /* An offline contract is a record, not a live one: it cannot be republished, and it no
+     longer asks anyone to sign — so its signing rules can never fire again, and editing
+     them would be a setting with nothing left to act on. View is the only item that still
+     means anything, and a one-item menu is the honest answer rather than a padded one.
+     Note what is deliberately absent: there is no "bring back online". Offlining is
+     irreversible by design, which the confirm dialog states before it happens. */
+  const live = r.status==='Active';
   host.innerHTML = `<div class="menu" style="top:${S.menuAt.top}px;left:${S.menuAt.left}px">
     <button onclick="openViewer('${r.id}')">${I.eye}View contract</button>
-    ${/* The schedule is not part of the document, so it stays editable after
-         publish — a country changing its rules must not force every client to
-         re-upload a PDF. The immutability promise on step 3 is about the file. */''}
-    <button onclick="openRules('${r.id}')">${I.edit}Edit signing rules</button>
-    ${r.status==='Active'?`<div class="mdiv"></div>
+    ${live?`${/* The schedule is not part of the document, so on a live contract it stays
+                 editable after publish — a country changing its rules must not force every
+                 client to re-upload a PDF. The immutability promise on step 3 is about the
+                 file, not the schedule. */''}
+      <button onclick="openRules('${r.id}')">${I.edit}Edit signing rules</button>
+      <div class="mdiv"></div>
       <button onclick="askOffline('${r.id}')">${I.cloudOff}Offline</button>`:''}
   </div>`;
 }
