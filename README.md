@@ -48,3 +48,5 @@ the row menu:
 ## Designs
 
 [Feature — Legal (Figma)](https://www.figma.com/design/31OYHKGXthe9oLLssyOs77/Feature---Legal?node-id=1368-38558&t=vGT0kGaGWNLcZawo-11)
+[Prototype](https://mhuynh-agentsonly.github.io/client-compliance/client-legal-contracts-prototype.html)
+
