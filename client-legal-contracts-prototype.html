@@ -220,10 +220,15 @@ tbody tr.fresh .cty{font-weight:600}
 .qm{width:15px;height:15px;border-radius:50%;border:1.4px solid var(--ink4);color:var(--ink4);
   font-size:10px;line-height:1;font-weight:600;display:inline-flex;align-items:center;
   justify-content:center;cursor:help;position:relative;flex:0 0 15px}
-.qm:hover>span{opacity:1;transform:translate(-50%,0)}
-.qm>span{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translate(-50%,4px);
+.qm:hover>span{opacity:1;transform:translate(0,-50%)}
+/* To the right of the icon, vertically centred on it, with a left-pointing tail — so the
+   tooltip points back at the thing it explains instead of floating above the label. */
+.qm>span{position:absolute;left:calc(100% + 10px);top:50%;transform:translate(-4px,-50%);
   background:var(--ink);color:#fff;font-size:12.5px;line-height:1.4;padding:8px 11px;border-radius:8px;
-  width:250px;text-align:left;opacity:0;pointer-events:none;transition:.14s;z-index:5;font-weight:400}
+  width:max-content;max-width:300px;text-align:left;opacity:0;pointer-events:none;
+  transition:.14s;z-index:5;font-weight:400}
+.qm>span::after{content:'';position:absolute;right:100%;top:50%;transform:translateY(-50%);
+  border:6px solid transparent;border-right-color:var(--ink)}
 
 /* country combobox */
 .combo{position:relative}
@@ -305,19 +310,13 @@ tbody tr.fresh .cty{font-weight:600}
 .chkline label span{display:block;font-size:12.5px;color:var(--ink3);margin-top:2px}
 .renew{margin:12px 0 0 28px;padding:13px 14px;background:#fff;border:1px solid var(--line);border-radius:10px}
 .renew .row{display:flex;align-items:center;gap:11px;flex-wrap:wrap}
-.renew input[type=number]{padding:9px 11px;border:1px solid var(--line);border-radius:9px;
-  background:#fff;width:96px}
-/* The native select kept its own arrow inside our border, which left the right side
-   visually heavier than the left. Own chevron, balanced padding. */
-.renew select{appearance:none;-webkit-appearance:none;padding:9px 36px 9px 12px;
-  border:1px solid var(--line);border-radius:9px;background:#fff;
-  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 12px center;background-size:15px 15px}
-.renew select:focus{outline:none;border-color:var(--purple-line);box-shadow:0 0 0 4px var(--purple-tint)}
+.renew input.mth{padding:9px 11px;border:1px solid var(--line);border-radius:9px;
+  background:#fff;width:76px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.renew input.mth:focus{outline:none;border-color:var(--purple-line);
+  box-shadow:0 0 0 4px var(--purple-tint)}
+.renew input.mth.bad{border-color:var(--red-ln)}
+.renew input.mth.bad:focus{box-shadow:0 0 0 4px var(--red-bg)}
 .renew .note{font-size:12.5px;color:var(--ink3);margin-top:9px}
-.renew .law{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;color:var(--amber);
-  background:var(--amber-bg);border:1px solid var(--amber-ln);border-radius:8px;padding:8px 10px;margin-top:10px}
-.renew .law svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 15px;margin-top:1px}
 
 /* review */
 .rev{border:1px solid var(--line);border-radius:12px;overflow:hidden}
@@ -386,10 +385,8 @@ const I = {
   file:'<svg viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>',
   trash:'<svg viewBox="0 0 24 24"><path d="M4 6h16M9 6V4.6A1.6 1.6 0 0 1 10.6 3h2.8A1.6 1.6 0 0 1 15 4.6V6"/><path d="M6.5 6l.8 13.1A1.9 1.9 0 0 0 9.2 21h5.6a1.9 1.9 0 0 0 1.9-1.9L17.5 6"/></svg>',
   lock:'<svg viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10.5" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>',
-  warn:'<svg viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17h.01"/></svg>',
   tick:'<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>',
   bang:'<svg viewBox="0 0 24 24"><path d="M12 7v6M12 17h.01"/></svg>',
-  edit:'<svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
   x:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.2"/><path d="M9 9l6 6M15 9l-6 6" stroke-linecap="round"/></svg>'
 };
 const NAVICONS = {
@@ -438,39 +435,38 @@ let sampleN = 0;
 const nextSample = () => { const s = SAMPLES[sampleN % SAMPLES.length]; sampleN++;
   return {name:s[0], size:s[1]}; };
 
-/* One row per document, matching the table in the source file. `renew` and
-   `audience` are the two new per-document settings; `agents` is how many people
-   have signed it, which the "shorten the interval" confirm needs to count. */
+/* One row per document, matching the table in the source file. `renew` and `audience`
+   are the two new per-document settings, both fixed at publish. */
 let ROWS = [];
 function seed(){
   const base = [
-    ['Argentina','Master Services Agreement','Active','08/05/2026',0,'both',41],
-    ['Brazil','Agents Only Non-Disclosure Agreement','Active','08/03/2026',0,'both',88],
-    ['Brazil','Independent Contractor Agreement','Offline','07/30/2026',0,'both',88],
-    ['Colombia','Agents Only Platform Terms of Service','Active','07/22/2026',0,'new',63],
-    ['Chile','Agents Only Non-Disclosure Agreement','Active','07/14/2026',0,'both',24],
-    ['Chile','Independent Contractor Agreement','Active','07/01/2026',0,'both',24],
-    ['Egypt','Independent Contractor Agreement','Active','07/01/2026',0,'both',17],
-    ['Philippines','Independent Contractor Agreement','Active','06/30/2026',0,'both',120],
-    ['Philippines','Master Services Agreement','Active','06/11/2026',0,'existing',120],
-    ['Portugal','Independent Contractor Work Agreement Document','Active','06/08/2026',0,'both',9],
+    ['Argentina','Master Services Agreement','Active','08/05/2026',0,'both'],
+    ['Brazil','Agents Only Non-Disclosure Agreement','Active','08/03/2026',0,'both'],
+    ['Brazil','Independent Contractor Agreement','Offline','07/30/2026',0,'both'],
+    ['Colombia','Agents Only Platform Terms of Service','Active','07/22/2026',0,'new'],
+    ['Chile','Agents Only Non-Disclosure Agreement','Active','07/14/2026',0,'both'],
+    ['Chile','Independent Contractor Agreement','Active','07/01/2026',0,'both'],
+    ['Egypt','Independent Contractor Agreement','Active','07/01/2026',0,'both'],
+    ['Philippines','Independent Contractor Agreement','Active','06/30/2026',0,'both'],
+    ['Philippines','Master Services Agreement','Active','06/11/2026',0,'existing'],
+    ['Portugal','Independent Contractor Work Agreement Document','Active','06/08/2026',0,'both'],
     /* The one already on a renewal schedule, so the list state is visible from
        the start rather than only after a publish. */
-    ['Australia','Independent Contractor Agreement','Active','06/02/2026',6,'both',32],
-    ['Australia','Agents Only Non-Disclosure Agreement','Active','05/28/2026',0,'both',32],
-    ['India','Independent Contractor Agreement','Active','05/19/2026',0,'both',54],
-    ['India','Master Services Agreement','Active','05/11/2026',0,'both',54],
-    ['Mexico','Independent Contractor Agreement','Active','04/30/2026',0,'both',38],
-    ['Mexico','Agents Only Platform Terms of Service','Offline','04/22/2026',0,'both',38],
-    ['Spain','Independent Contractor Agreement','Active','04/08/2026',12,'both',26],
-    ['Spain','Agents Only Non-Disclosure Agreement','Active','03/30/2026',0,'new',26],
-    ['Ghana','Master Services Agreement','Active','03/18/2026',0,'both',11],
-    ['Colombia','Independent Contractor Agreement','Active','03/02/2026',0,'both',63],
-    ['Argentina','Agents Only Non-Disclosure Agreement','Active','02/19/2026',0,'both',41],
-    ['Egypt','Agents Only Platform Terms of Service','Offline','02/04/2026',0,'existing',17]
+    ['Australia','Independent Contractor Agreement','Active','06/02/2026',6,'both'],
+    ['Australia','Agents Only Non-Disclosure Agreement','Active','05/28/2026',0,'both'],
+    ['India','Independent Contractor Agreement','Active','05/19/2026',0,'both'],
+    ['India','Master Services Agreement','Active','05/11/2026',0,'both'],
+    ['Mexico','Independent Contractor Agreement','Active','04/30/2026',0,'both'],
+    ['Mexico','Agents Only Platform Terms of Service','Offline','04/22/2026',0,'both'],
+    ['Spain','Independent Contractor Agreement','Active','04/08/2026',12,'both'],
+    ['Spain','Agents Only Non-Disclosure Agreement','Active','03/30/2026',0,'new'],
+    ['Ghana','Master Services Agreement','Active','03/18/2026',0,'both'],
+    ['Colombia','Independent Contractor Agreement','Active','03/02/2026',0,'both'],
+    ['Argentina','Agents Only Non-Disclosure Agreement','Active','02/19/2026',0,'both'],
+    ['Egypt','Agents Only Platform Terms of Service','Offline','02/04/2026',0,'existing']
   ];
   ROWS = base.map((r,i)=>({id:'c'+i, country:r[0], title:r[1], status:r[2], date:r[3],
-    renew:r[4], audience:r[5], agents:r[6]}));
+    renew:r[4], audience:r[5]}));
 }
 seed();
 
@@ -480,7 +476,7 @@ seed();
 const S = {
   q:'', page:1, sortKey:'date', sortDir:'desc',
   menu:null, menuAt:null,
-  modal:null,          // wizard | offline | discard | rules | viewer
+  modal:null,          // wizard | offline | discard | viewer
   step:1,
   target:null,         // row id for offline / rules / viewer
   fresh:null,          // ids of rows just published, highlighted briefly
@@ -497,6 +493,13 @@ const NAMEMAX = 60;
    Replace this with a per-country lookup once legal supplies the caps — the list is short,
    and that turns the default from a guess into data. */
 const DEFAULT_MONTHS = '3';
+/* A plain number box rather than a preset list. Presets would imply "these are the values
+   that matter", and there is no country-cap table to source such a list from — so someone
+   whose real cap is 9 or 18 months would pick the nearest option instead of the right
+   number. The box makes no claim about which values are real; min/max and the "months"
+   suffix do the work a dropdown would have done, without the mode switch that a
+   "Custom…" option forces on the control. */
+const MIN_MONTHS = 1, MAX_MONTHS = 60;
 
 /* A fresh wizard. `docs` holds one entry per uploaded file, because the table is
    per document: name, file, and the two signing settings all belong to the
@@ -506,7 +509,7 @@ function newWizard(country){
 }
 function newDoc(file){
   return {uid:'d'+Math.random().toString(36).slice(2,8), name:'', file:file,
-          progress:100, audience:'both', renew:false, months:DEFAULT_MONTHS, custom:'12'};
+          progress:100, audience:'both', renew:false, months:DEFAULT_MONTHS};
 }
 
 /* ============================================================
@@ -566,7 +569,7 @@ function rowHTML(r){
   return `<tr class="${S.fresh && S.fresh.has(r.id) ? 'fresh' : ''}">
     <td><span class="cty"><span class="flag">${flagOf(r.country)}</span>${esc(r.country)}</span></td>
     <td><span class="ctr"><b>${esc(r.title)}</b>
-      ${r.renew?`<span class="sub">Re-signed every ${r.renew} months</span>`:''}
+      ${r.renew?`<span class="sub">Signature renewal every ${r.renew} months</span>`:''}
     </span></td>
     <td><span class="chip ${r.status==='Active'?'ok':'off'}">${r.status}</span></td>
     <td style="white-space:nowrap">${r.date}</td>
@@ -649,21 +652,17 @@ function drawMenu(){
   const host = document.getElementById('overlay');
   if(!S.menu || S.modal){ if(!S.modal) host.innerHTML=''; return; }
   const r = ROWS.find(x=>x.id===S.menu);
-  /* An offline contract is a record, not a live one: it cannot be republished, and it no
-     longer asks anyone to sign — so its signing rules can never fire again, and editing
-     them would be a setting with nothing left to act on. View is the only item that still
-     means anything, and a one-item menu is the honest answer rather than a padded one.
-     Note what is deliberately absent: there is no "bring back online". Offlining is
-     irreversible by design, which the confirm dialog states before it happens. */
+  /* No "Edit signing rules". Changing a renewal interval on a live contract raises a
+     question nobody has answered yet — what happens to agents who have already renewed
+     under the old interval — so the route in is deliberately the blunt one: offline the
+     contract and publish the same document again with the new setting.
+     Note what is also absent: there is no "bring back online". Offlining is irreversible
+     by design, which the confirm dialog states before it happens. An offline contract is
+     a record, so View is all that is left for it. */
   const live = r.status==='Active';
   host.innerHTML = `<div class="menu" style="top:${S.menuAt.top}px;left:${S.menuAt.left}px">
     <button onclick="openViewer('${r.id}')">${I.eye}View contract</button>
-    ${live?`${/* The schedule is not part of the document, so on a live contract it stays
-                 editable after publish — a country changing its rules must not force every
-                 client to re-upload a PDF. The immutability promise on step 3 is about the
-                 file, not the schedule. */''}
-      <button onclick="openRules('${r.id}')">${I.edit}Edit signing rules</button>
-      <div class="mdiv"></div>
+    ${live?`<div class="mdiv"></div>
       <button onclick="askOffline('${r.id}')">${I.cloudOff}Offline</button>`:''}
   </div>`;
 }
@@ -680,36 +679,6 @@ function doOffline(){
   closeAll();
   toast('ok','Successfully switched offline.');
 }
-function openRules(id){
-  S.menu=null; S.modal='rules'; S.target=id;
-  const r = ROWS.find(x=>x.id===id);
-  S.rules = {audience:r.audience, renew:!!r.renew,
-             months:r.renew?(([3,6,12,24].includes(r.renew))?String(r.renew):'custom'):DEFAULT_MONTHS,
-             custom:String(r.renew||12)};
-  render();
-}
-function rulesMonths(){
-  const m = S.rules.months;
-  if(!S.rules.renew) return 0;
-  return m==='custom' ? Math.max(1,Math.min(36, parseInt(S.rules.custom||'0',10)||0)) : parseInt(m,10);
-}
-function saveRules(){
-  const r = ROWS.find(x=>x.id===S.target);
-  const was = r.renew, now = rulesMonths();
-  r.audience = S.rules.audience;
-  r.renew = now;
-  closeAll();
-  /* Shortening an interval can make people due immediately, because every clock
-     recomputes as (that agent's last signature + the new interval). Saying so
-     after the fact is the least the change can do. */
-  if(now && was && now < was && r.agents)
-    toast('ok','Signing rules updated. Up to '+r.agents+' agents may be due to re-sign immediately.');
-  else if(now && !was)
-    toast('ok','Re-signing turned on. Agents fall due '+now+' months after their own signature.');
-  else if(!now && was) toast('ok','Re-signing turned off for this contract.');
-  else toast('ok','Signing rules updated.');
-}
-
 /* ============================================================
    WIZARD
    ============================================================ */
@@ -730,8 +699,8 @@ function closeAll(){ S.modal=null; S.menu=null; S.target=null; render(); }
    it sits beneath the other two options and has to say it covers them. In the review there
    is nothing left to be "both" of, so it just states who signs. */
 const AUD = [
-  ['new','New applicants','Agents who sign as part of applying to this project from now on. People already on the project are not asked.'],
-  ['existing','Existing agents','Everyone already working on this project. New applicants are not asked to sign it.'],
+  ['new','New applicants','Agents who apply after you publish'],
+  ['existing','Existing agents','Agents already in the project'],
   ['both','Both (all agents)','','All agents']
 ];
 const audLabel = k => { const a = AUD.find(x=>x[0]===k); return a ? (a[3]||a[1]) : '—'; };
@@ -749,18 +718,21 @@ function nameErr(w, d){
   if(dupeBatch || dupeLive) return 'Document names must be unique within each country. Please try again.';
   return null;
 }
-function customErr(d){
-  if(!d.renew || d.months!=='custom') return null;
-  const v = parseInt(d.custom,10);
-  return (!v || v<1 || v>36) ? 'Enter a whole number of months between 1 and 36.' : null;
+/* The field only ever holds digits now, so the message no longer has to say "whole
+   number" — the only mistakes left are an empty box or a number outside the range. */
+function monthsErr(d){
+  if(!d.renew) return null;
+  const v = parseInt(String(d.months),10);
+  return (!v || v<MIN_MONTHS || v>MAX_MONTHS)
+    ? `Enter a number between ${MIN_MONTHS} and ${MAX_MONTHS}.` : null;
 }
 function step2Ready(){
   const w=S.wz;
-  return w.docs.length>0 && w.docs.every(d=>d.file && !nameErr(w,d) && !customErr(d));
+  return w.docs.length>0 && w.docs.every(d=>d.file && !nameErr(w,d) && !monthsErr(d));
 }
 function renewMonths(d){
   if(!d.renew) return 0;
-  return d.months==='custom' ? (parseInt(d.custom,10)||0) : parseInt(d.months,10);
+  return parseInt(d.months,10) || 0;
 }
 
 function stepper(){
@@ -777,8 +749,7 @@ function step1(){
   const w = S.wz;
   return `<div class="fld">
     <label>Country
-      <span class="qm">?<span>Only countries that are part of this project, and that have a
-        completed Onboarding configuration, are listed.</span></span></label>
+      <span class="qm">?<span>Only countries that are part of this project are listed</span></span></label>
     <div class="combo">
       <div class="cbtn ${w.copen?'open':''}" onclick="event.stopPropagation();toggleCombo()">
         ${/* The leading slot carries the globe until a country is chosen, then that
@@ -863,7 +834,7 @@ function pickCountry(c){
 function fileCard(d, i, n){
   const w = S.wz;
   const err = d.name ? nameErr(w,d) : null;     // don't shout before they have typed
-  const cerr = customErr(d);
+  const merr = monthsErr(d);
   const over = d.name.length > NAMEMAX;
   return `<div class="dcard">
     <div class="top">
@@ -904,19 +875,24 @@ function fileCard(d, i, n){
       <div class="chkline">
         <input type="checkbox" id="rn-${d.uid}" ${d.renew?'checked':''}
                onchange="setRenew('${d.uid}',this.checked)">
-        <label for="rn-${d.uid}"><b>Require periodic re-signing</b>
-          <span>For countries that cap how long one contractor engagement can run on a single signature.</span></label>
+        <label for="rn-${d.uid}"><b>Require contract renewal</b>
+          <span>Agents will be required to sign a new contract when the current contract expires
+            or reaches its maximum allowable duration.</span></label>
       </div>
       ${d.renew?`<div class="renew">
-        <div class="row"><span>Re-sign every</span>
-          <select onchange="setMonths('${d.uid}',this.value)">
-            ${['3','6','12','24'].map(m=>`<option value="${m}" ${d.months===m?'selected':''}>${m} months</option>`).join('')}
-            <option value="custom" ${d.months==='custom'?'selected':''}>Custom…</option>
-          </select>
-          ${d.months==='custom'?`<input type="number" min="1" max="36" value="${esc(d.custom)}"
-             oninput="setCustom('${d.uid}',this.value)"><span>months</span>`:''}
+        ${/* text + inputmode=numeric, not type=number. A number input still accepts "." ","
+              "e" and "-", and while its value is mid-way invalid it reports an empty string,
+              so it cannot be filtered reliably. Here every non-digit is dropped as it is
+              typed or pasted, which makes a decimal impossible to enter at all — one whole
+              class of mistake gone rather than caught. */''}
+        <div class="row"><span>Renew every</span>
+          <input type="text" inputmode="numeric" maxlength="2" autocomplete="off"
+                 class="mth ${merr?'bad':''}" value="${esc(d.months)}"
+                 oninput="setMonths('${d.uid}',this.value,this)"><span>months</span>
         </div>
-        ${cerr?`<div class="hint err">${cerr}</div>`:''}
+        ${/* Always in the DOM so typing can toggle it in place — re-rendering the card on
+              each keystroke would take the caret out of the box being typed into. */''}
+        <div class="hint err" ${merr?'':'hidden'}>${merr||''}</div>
         <div class="note">Counted from <b>each agent's own signature date</b>, not the upload date.
           Two agents who signed in different weeks fall due in different weeks.</div>
       </div>`:''}
@@ -958,8 +934,15 @@ function setName(uid,v){ const d=S.wz.docs.find(x=>x.uid===uid); d.name=v;
   syncStep2(uid); }
 function setAud(uid,k){ S.wz.docs.find(x=>x.uid===uid).audience=k; }
 function setRenew(uid,v){ S.wz.docs.find(x=>x.uid===uid).renew=v; drawModal(); }
-function setMonths(uid,v){ S.wz.docs.find(x=>x.uid===uid).months=v; drawModal(); }
-function setCustom(uid,v){ S.wz.docs.find(x=>x.uid===uid).custom=v; syncStep2(uid); }
+/* Updated in place, not via drawModal — a redraw on every keystroke would pull the caret
+   out of the box being typed into. Non-digits are stripped here rather than rejected
+   later, so "." and "," simply never land in the field. */
+function setMonths(uid,v,el){
+  const clean = String(v).replace(/\D+/g,'').slice(0,2);
+  if(el && el.value !== clean) el.value = clean;
+  S.wz.docs.find(x=>x.uid===uid).months = clean;
+  syncStep2(uid);
+}
 /* Typing must not blow away the field being typed into, so the counter, the
    inline error and the footer button are updated in place. */
 function syncStep2(uid){
@@ -976,8 +959,10 @@ function syncStep2(uid){
     if(err && !hint){ hint=document.createElement('div'); hint.className='hint err';
       cnt.after(hint); }
     if(hint) { hint.textContent = err||''; hint.hidden = !err; }
-    const ce = customErr(d), cbox = card.querySelector('.renew .hint');
-    if(cbox){ cbox.textContent = ce||''; cbox.hidden = !ce; }
+    const me = monthsErr(d), mbox = card.querySelector('.renew .hint');
+    if(mbox){ mbox.textContent = me||''; mbox.hidden = !me; }
+    const mnum = card.querySelector('.renew input.mth');
+    if(mnum) mnum.classList.toggle('bad', !!me);
   }
   const b = document.getElementById('wzNext');
   if(b) b.disabled = !step2Ready();
@@ -999,7 +984,7 @@ function step3(){
         ${/* Only when it is on. Re-signing applies to a handful of countries, so a
              "Not required" row on almost every publish was noise standing between the
              reviewer and the things that do vary. */''}
-        ${m?`<div class="r"><span class="k">Re-signing</span>
+        ${m?`<div class="r"><span class="k">Contract renewal</span>
           <span class="v">Every ${m} months, from each agent's signature date</span></div>`:''}
         <div class="r"><span class="k">File</span><span class="v">${esc(d.file.name)}</span></div>`;
       }).join('')}
@@ -1023,7 +1008,7 @@ function publish(){
     const id = 'n'+Math.random().toString(36).slice(2,7);
     added.push(id);
     ROWS.unshift({id:id, country:w.country, title:d.name.trim(), status:'Active', date:date,
-      renew:renewMonths(d), audience:d.audience, agents:0});
+      renew:renewMonths(d), audience:d.audience});
   });
   S.q=''; S.page=1; S.sortKey='date'; S.sortDir='desc';
   closeAll();
@@ -1065,7 +1050,7 @@ function offlineHTML(){
       <button class="x" onclick="closeAll()">${I.x}</button></div>
     <p class="msub"><b>${esc(r.title)}</b> — ${esc(r.country)}.
       Once offline, this contract cannot be republished${r.renew
-        ? ', and agents will no longer be asked to re-sign it' : ''}.</p>
+        ? ', and agents will no longer be asked to renew it' : ''}.</p>
     <div class="mfoot"><button class="btn wide" onclick="closeAll()">Keep Offline</button>
       <button class="btn dan wide" onclick="doOffline()">Offline</button></div>
   </div>`;
@@ -1076,54 +1061,6 @@ function discardHTML(){
     <p class="msub">Your work on this contract won't be saved.</p>
     <div class="mfoot"><button class="btn wide" onclick="S.modal='wizard';render()">Keep editing</button>
       <button class="btn dan wide" onclick="closeAll()">Discard</button></div>
-  </div>`;
-}
-function rulesHTML(){
-  const r = ROWS.find(x=>x.id===S.target), R = S.rules;
-  const now = rulesMonths();
-  /* Only worth warning about when there are signatures to recompute. On a contract
-     nobody has signed yet the sentence is true but empty. */
-  const shorter = now && r.renew && now < r.renew && r.agents>0;
-  return `<div class="modal" onclick="event.stopPropagation()">
-    <div class="mhead"><div><h3>Edit signing rules</h3>
-      <p class="msub">${flagOf(r.country)} ${esc(r.country)} · ${esc(r.title)}</p></div>
-      <button class="x" onclick="closeAll()">${I.x}</button></div>
-    <div class="mbody">
-      <div class="dcard" style="margin:14px 0 0">
-        <div class="rules" style="border:none;margin:0;padding:0">
-          <h5>Signing Requirement</h5>
-          <p class="rsub">Choose which agents are required to review and sign this document.</p>
-          ${AUD.map(([k,l,tip])=>`<label class="radio">
-            <input type="radio" name="raud" ${R.audience===k?'checked':''}
-                   onchange="S.rules.audience='${k}'">${l}
-            ${tip?`<span class="qm">?<span>${tip}</span></span>`:''}</label>`).join('')}
-          <div class="chkline">
-            <input type="checkbox" id="rrn" ${R.renew?'checked':''}
-                   onchange="S.rules.renew=this.checked;drawModal()">
-            <label for="rrn"><b>Require periodic re-signing</b>
-              <span>For countries that cap how long one contractor engagement can run on a single signature.</span></label>
-          </div>
-          ${R.renew?`<div class="renew">
-            <div class="row"><span>Re-sign every</span>
-              <select onchange="S.rules.months=this.value;drawModal()">
-                ${['3','6','12','24'].map(m=>`<option value="${m}" ${R.months===m?'selected':''}>${m} months</option>`).join('')}
-                <option value="custom" ${R.months==='custom'?'selected':''}>Custom…</option></select>
-              ${R.months==='custom'?`<input type="number" min="1" max="36" value="${esc(R.custom)}"
-                 oninput="S.rules.custom=this.value;drawModal()"><span>months</span>`:''}
-            </div>
-            <div class="note">Counted from each agent's own signature date, not the upload date.</div>
-            ${/* The one consequence a client cannot see from the control itself. */''}
-            ${shorter?`<div class="law">${I.warn}<span>Shortening the interval recomputes every
-              agent's due date as <b>their last signature + ${now} months</b>. Up to
-              <b>${r.agents} agents</b> on this contract may be due to re-sign immediately.</span></div>`:''}
-          </div>`:''}
-        </div>
-      </div>
-      <div class="lock">${I.lock}This changes the schedule only. The published document itself
-        can't be edited — only replaced by a later version.</div>
-    </div>
-    <div class="mfoot"><button class="btn wide" onclick="closeAll()">Cancel</button>
-      <button class="btn pri wide" onclick="saveRules()">Save signing rules</button></div>
   </div>`;
 }
 function viewerHTML(){
@@ -1186,7 +1123,6 @@ function drawModal(){
   const inner = S.modal==='wizard' ? wizardHTML()
     : S.modal==='offline' ? offlineHTML()
     : S.modal==='discard' ? discardHTML()
-    : S.modal==='rules'   ? rulesHTML()
     : S.modal==='viewer'  ? viewerHTML() : '';
   if(!inner){ host.dataset.mkey = ''; return drawMenu(); }
   host.innerHTML = `<div class="scrim" onclick="${S.modal==='wizard'?'tryClose()':'closeAll()'}">${inner}</div>`;
