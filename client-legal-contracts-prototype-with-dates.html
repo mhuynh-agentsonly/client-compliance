@@ -1171,27 +1171,28 @@ function step3(){
         <span class="v">${flagOf(w.country)} ${esc(w.country)}</span></div>
       ${w.docs.map((d,i)=>{
         const m = renewMonths(d);
-        /* Rows follow the order of the card they came from — name, file, then who signs
-           it, how long it lasts, how often the signature refreshes. A reviewer checking
-           their own work reads down the same list twice rather than re-finding each
-           setting in a new order. */
-        return `${w.docs.length>1?`<div class="grp">Document ${i+1}</div>`:''}
-        <div class="r"><span class="k">${w.docs.length>1?`Document ${i+1} name`:'Document name'}</span>
+        /* The same shape whether there is one document or five: a numbered group header and
+           a numbered name. A single document used to drop both, which made one publish read
+           differently from another for no reason the reviewer benefits from — and hid the
+           fact that a second document could exist at all.
+           Settings run name → who signs → how long → how often; the file lands last, as the
+           artefact all of it applies to. */
+        return `<div class="grp">Document ${i+1}</div>
+        <div class="r"><span class="k">Document ${i+1} name</span>
           <span class="v">${esc(d.name)}</span></div>
-        <div class="r"><span class="k">File</span><span class="v">${esc(d.file.name)}</span></div>
         <div class="r"><span class="k">Signing requirement</span>
           <span class="v">${audLabel(d.audience)}</span></div>
         ${/* Shown only when set, so a contract with no end date reads exactly as it did
              before dates existed. */''}
         ${d.endDate?`<div class="r"><span class="k">End date</span>
           <span class="v">${fmtDate(d.endDate)} — in force from today</span></div>`:''}
-        ${/* Only when it is on. Re-signing applies to a handful of countries, so a
+        ${/* Only when it is on. Renewal applies to a handful of countries, so a
              "Not required" row on almost every publish was noise standing between the
-             reviewer and the things that do vary. */''}
+             reviewer and the things that do vary. No "never past {end}" qualifier either:
+             the End date row directly above already says when everything stops. */''}
         ${m?`<div class="r"><span class="k">Contract renewal</span>
-          <span class="v">Every ${m} months, from each agent's signature date${
-            d.endDate?`, and never past ${fmtDate(d.endDate)}`:''}</span>
-        </div>`:''}`;
+          <span class="v">Every ${m} months, from each agent's signature date</span></div>`:''}
+        <div class="r"><span class="k">Files</span><span class="v">${esc(d.file.name)}</span></div>`;
       }).join('')}
     </div>
     <div class="lock">${I.lock}Published versions can't be edited — only replaced by a later version.</div>
