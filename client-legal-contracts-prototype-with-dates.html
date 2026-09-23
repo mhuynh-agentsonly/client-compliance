@@ -460,11 +460,16 @@ const NOW = new Date();
 const isoOf = d => d.toISOString().slice(0,10);
 const TODAY_ISO = isoOf(NOW);
 function shiftDays(n){ const d = new Date(NOW); d.setDate(d.getDate()+n); return isoOf(d); }
+/* A renewal month is 30 days, not a calendar month. Calendar months vary in length, so two
+   agents signing a day apart across a month boundary would otherwise get intervals of
+   different real lengths — and for a legal cap measured in days, "6 months" has to mean the
+   same duration for everyone. Everything that counts an interval goes through this. */
+const DAYS_PER_MONTH = 30;
 function shiftMonths(iso, months){
   if(!iso) return '';
   const [y,m,dd] = iso.split('-').map(Number);
   const d = new Date(Date.UTC(y, m-1, dd));
-  d.setUTCMonth(d.getUTCMonth()+months);
+  d.setUTCDate(d.getUTCDate() + months*DAYS_PER_MONTH);
   return isoOf(d);
 }
 /* MM/DD/YYYY, matching the Upload Date column. */
@@ -551,14 +556,12 @@ const S = {
 const PER = 10;
 const MAXFILES = 5;
 const NAMEMAX = 60;
-/* The shortest interval, deliberately — not the most common one.
-   With no country cap to validate against, the default cannot be "right", so it should be
-   the one that fails harmlessly. Too short only means agents re-sign more often than the
-   law asks: friction, recoverable, no exposure. Too long means a contract outlives the cap
-   this feature exists to enforce, and nobody finds out until an audit.
-   Replace this with a per-country lookup once legal supplies the caps — the list is short,
-   and that turns the default from a guess into data. */
-const DEFAULT_MONTHS = '3';
+/* No default at all. With no country-cap table to validate against, any pre-filled number
+   is a guess that can be published without anyone deciding — and this is a compliance
+   value, so an interval nobody chose is the failure mode worth preventing. Blank field,
+   Continue disabled until a number is entered, which is how the country step already works.
+   Give it a real default the day legal supplies the per-country caps, not before. */
+const DEFAULT_MONTHS = '';
 /* A plain number box rather than a preset list. Presets would imply "these are the values
    that matter", and there is no country-cap table to source such a list from — so someone
    whose real cap is 9 or 18 months would pick the nearest option instead of the right
@@ -581,7 +584,10 @@ function newDoc(file){
              don't need one. There is no start date to set: publishing is the start.
              `endTouched` exists only so the empty field can stay quiet until the person has
              actually been to it — see fileCard. */
-          hasEnd:false, endDate:'', endTouched:false};
+          hasEnd:false, endDate:'', endTouched:false,
+          /* Same idea as endTouched: an empty interval is "not filled in yet", not "wrong",
+             so it stays quiet until the person has actually been to the field. */
+          monthsTouched:false};
 }
 
 /* ============================================================
@@ -877,9 +883,11 @@ function renewFitErr(d){
   if(!m) return null;                               // monthsErr already covers a bad number
   const max = maxInterval(d.endDate);
   if(m <= max) return null;
+  /* "Valid until" rather than "ends", echoing the label on the date field above it — the
+     error should name the thing it is talking about the way the person just read it. */
   return max === 0
-    ? `This contract ends too soon for any renewal. Extend the end date or turn renewal off.`
-    : `The renewal interval must fit inside the contract. It ends ${fmtDate(d.endDate)}, so the longest interval is ${max} months.`;
+    ? `The contract is only valid until ${fmtDate(d.endDate)}, which is too soon for any renewal. Extend the date or turn renewal off.`
+    : `The renewal interval must fit inside the contract. It's valid until ${fmtDate(d.endDate)}, so the longest interval is ${max} month${max===1?'':'s'}.`;
 }
 
 function stepper(){
@@ -981,7 +989,7 @@ function pickCountry(c){
 function fileCard(d, i, n){
   const w = S.wz;
   const err = d.name ? nameErr(w,d) : null;     // don't shout before they have typed
-  const merr = monthsErr(d);
+  const merr = (d.months || d.monthsTouched) ? monthsErr(d) : null;
   /* An empty field is "not filled in yet", not "wrong" — the same reason the document name
      above shows no error until something has been typed. `datesErr` still reports it, so
      Continue stays disabled; it just isn't shouted about before the person has been there. */
@@ -1071,8 +1079,9 @@ function fileCard(d, i, n){
               errors share one slot because they are about the same number and cannot both
               apply: a number outside 1–60, or one that outlives the contract. */''}
         <div class="hint err" id="mth-err-${d.uid}" ${(merr||fiterr)?'':'hidden'}>${merr||fiterr||''}</div>
-        <div class="note">Counted from <b>each agent's own signature date</b>, not the upload date.
-          Two agents who signed in different weeks fall due in different weeks.</div>
+        <div class="note">Each month equals 30 days. Renewal is calculated from
+          <b>each agent's signature date</b>, not the upload date. Two agents who signed on
+          different dates will have different renewal dates.</div>
       </div>`:''}
     </div>
   </div>`;
@@ -1127,14 +1136,23 @@ function setDate(uid,which,v){
   if(which==='endDate') d.endTouched = true;   // clearing it after this point does warn
   drawModal();
 }
-function setRenew(uid,v){ S.wz.docs.find(x=>x.uid===uid).renew=v; drawModal(); }
+function setRenew(uid,v){
+  const d = S.wz.docs.find(x=>x.uid===uid);
+  d.renew = v;
+  /* Unticking clears the interval, so re-ticking starts blank and quiet rather than
+     carrying a number nobody can see. */
+  if(!v){ d.months = ''; d.monthsTouched = false; }
+  drawModal();
+}
 /* Updated in place, not via drawModal — a redraw on every keystroke would pull the caret
    out of the box being typed into. Non-digits are stripped here rather than rejected
    later, so "." and "," simply never land in the field. */
 function setMonths(uid,v,el){
   const clean = String(v).replace(/\D+/g,'').slice(0,2);
   if(el && el.value !== clean) el.value = clean;
-  S.wz.docs.find(x=>x.uid===uid).months = clean;
+  const d = S.wz.docs.find(x=>x.uid===uid);
+  d.months = clean;
+  d.monthsTouched = true;        // clearing it after this point does warn
   syncStep2(uid);
 }
 /* Typing must not blow away the field being typed into, so the counter, the
@@ -1153,7 +1171,7 @@ function syncStep2(uid){
     if(err && !hint){ hint=document.createElement('div'); hint.className='hint err';
       cnt.after(hint); }
     if(hint) { hint.textContent = err||''; hint.hidden = !err; }
-    const me = monthsErr(d) || renewFitErr(d);
+    const me = ((d.months || d.monthsTouched) ? monthsErr(d) : null) || renewFitErr(d);
     const mbox = document.getElementById('mth-err-'+uid);
     if(mbox){ mbox.textContent = me||''; mbox.hidden = !me; }
     const mnum = card.querySelector('.renew input.mth');
@@ -1252,16 +1270,14 @@ function wizardHTML(){
    OVERLAYS
    ============================================================ */
 function offlineHTML(){
-  const r = ROWS.find(x=>x.id===S.target);
+  /* One static string — no contract name, no conditional on whether a renewal exists.
+     Both consequences are true of every contract this dialog can open on, so stating them
+     flatly is shorter than tailoring them and there is only one version to maintain. */
   return `<div class="modal sm" onclick="event.stopPropagation()">
     <div class="mhead"><h3>Offline this contract?</h3>
       <button class="x" onclick="closeAll()">${I.x}</button></div>
-    <p class="msub"><b>${esc(r.title)}</b> — ${esc(r.country)}.
-      Once offline, this contract cannot be republished${r.renew
-        ? ', and agents will no longer be asked to renew it' : ''}.
-      ${/* Taking a dated contract offline early is a real decision, so the date it would
-             otherwise have run to is worth stating before they confirm. */''}
-      ${r.endDate?` It would otherwise have stayed in force until ${fmtDate(r.endDate)}.`:''}</p>
+    <p class="msub">Once offline, this contract cannot be republished. Any pending renewals
+      will be invalidated.</p>
     <div class="mfoot"><button class="btn wide" onclick="closeAll()">Keep Offline</button>
       <button class="btn dan wide" onclick="doOffline()">Offline</button></div>
   </div>`;
