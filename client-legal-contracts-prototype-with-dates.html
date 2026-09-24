@@ -1203,7 +1203,7 @@ function step3(){
         ${/* Shown only when set, so a contract with no end date reads exactly as it did
              before dates existed. */''}
         ${d.endDate?`<div class="r"><span class="k">End date</span>
-          <span class="v">${fmtDate(d.endDate)} — in force from today</span></div>`:''}
+          <span class="v">${fmtDate(d.endDate)}</span></div>`:''}
         ${/* Only when it is on. Renewal applies to a handful of countries, so a
              "Not required" row on almost every publish was noise standing between the
              reviewer and the things that do vary. No "never past {end}" qualifier either:
